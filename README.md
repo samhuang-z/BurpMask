@@ -7,44 +7,44 @@ A de-identification proxy between Claude Code and Burp Suite's MCP server. Autom
 ## 架構 / Architecture
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                    Anthropic Cloud                       │
-│                                                         │
-│  Claude AI 只看到：mail.target-a.test、TargetA          │
-│  （永遠不知道真實目標是 google.com）                      │
-└──────────────────────┬──────────────────────────────────┘
-                       │
-            ┌──────────┴──────────┐
-            │    Claude Code      │
-            │   （你的電腦上）      │
-            └──────────┬──────────┘
-                       │ JSON-RPC (stdio)
-          ┌────────────┴────────────┐
-          │        BurpMask         │
-          │                         │
-          │  ↑ 回應往上傳給 Claude：  │
-          │    google.com            │
-          │    → target-a.test      │
-          │    Google → TargetA     │
-          │    ⚠ 安全檢查：攔截殘留   │
-          │                         │
-          │  ↓ 指令往下傳給 Burp：    │
-          │    target-a.test        │
-          │    → google.com         │
-          │    （僅替換域名）         │
-          └────────────┬────────────┘
-                       │ JSON-RPC (stdio)
-            ┌──────────┴──────────┐
-            │    mcp-proxy.jar    │
-            │  (stdio ↔ SSE 橋接)  │
-            └──────────┬──────────┘
-                       │ SSE (localhost:9876)
-            ┌──────────┴──────────┐
-            │  Burp Suite + MCP   │
-            │                     │
-            │  這裡用的是真實域名    │
-            │  google.com          │
-            └─────────────────────┘
++---------------------------------------------------+
+|                 Anthropic Cloud                    |
+|                                                   |
+|  Claude AI only sees: mail.target-a.test, TargetA |
+|  (never knows the real target is google.com)      |
++-------------------------+-------------------------+
+                          |
+               +----------+----------+
+               |     Claude Code     |
+               |  (on your machine)  |
+               +----------+----------+
+                          | JSON-RPC (stdio)
+              +-----------+-----------+
+              |       BurpMask        |
+              |                       |
+              | UP (Burp -> Claude):  |
+              |   google.com          |
+              |   -> target-a.test    |
+              |   Google -> TargetA   |
+              |   ! leak check        |
+              |                       |
+              | DOWN (Claude -> Burp):|
+              |   target-a.test       |
+              |   -> google.com       |
+              |   (domains only)      |
+              +-----------+-----------+
+                          | JSON-RPC (stdio)
+               +----------+----------+
+               |   mcp-proxy.jar     |
+               |  (stdio <-> SSE)    |
+               +----------+----------+
+                          | SSE (localhost:9876)
+               +----------+----------+
+               |  Burp Suite + MCP   |
+               |                     |
+               |  real domains here  |
+               |  google.com         |
+               +---------------------+
 ```
 
 **核心原則**：Claude 永遠看不到真實域名或關鍵字。真實資料只存在於本地端的 proxy 與 Burp Suite 之間。

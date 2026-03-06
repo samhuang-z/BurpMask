@@ -1,12 +1,12 @@
 {
   "replacements": {
     "domains": {
-      "portal.example.com": "portal.acme.test",
-      "*.example.com": "*.acme.test"
+      "mail.google.com": "mail.target-a.test",
+      "*.google.com": "*.target-a.test"
     },
     "keywords": {
-      "Example Corp": "AcmeCo",
-      "example": "acme"
+      "Google": "TargetA",
+      "google": "target-a"
     },
     "patterns": {}
   }

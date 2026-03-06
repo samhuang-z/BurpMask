@@ -8,7 +8,7 @@ A de-identification proxy between Claude Code and Burp Suite's MCP server. Autom
 
 ```
 Claude Code (AI API)
-  |  stdin:  假域名 (e.g. app.acme.test)
+  |  stdin:  假域名 (e.g. mail.target-a.test)
   |  stdout: 假域名
   v
 BurpMask (burpmask.py)
@@ -74,25 +74,27 @@ cp deid-config.example.json deid-config.json
 {
   "replacements": {
     "domains": {
-      "portal.example.com": "portal.acme.test",
-      "*.example.com": "*.acme.test"
+      "mail.google.com": "mail.target-a.test",
+      "*.google.com": "*.target-a.test"
     },
     "keywords": {
-      "Example Corp": "AcmeCo",
-      "example": "acme"
+      "Google": "TargetA",
+      "google": "target-a"
     },
     "patterns": {}
   }
 }
 ```
 
+以上範例會將所有 `google.com` 相關域名替換為 `target-a.test`，關鍵字 `Google` 替換為 `TargetA`。Claude 只會看到 `target-a.test`，永遠不會知道真實目標是 Google。
+
 #### 替換類型 / Replacement Types
 
 | 類型 | 格式 | 範例 | 方向 |
 |---|---|---|---|
-| **精確域名** | `"真實": "假的"` | `"portal.example.com": "portal.acme.test"` | 雙向（正向 + 反向） |
-| **萬用字元域名** | `"*.真實": "*.假的"` | `"*.example.com": "*.acme.test"` | 雙向（正向 + 反向） |
-| **關鍵字** | `"真實": "假的"` | `"Example Corp": "AcmeCo"` | 僅正向（Burp -> Claude） |
+| **精確域名** | `"真實": "假的"` | `"mail.google.com": "mail.target-a.test"` | 雙向（正向 + 反向） |
+| **萬用字元域名** | `"*.真實": "*.假的"` | `"*.google.com": "*.target-a.test"` | 雙向（正向 + 反向） |
+| **關鍵字** | `"真實": "假的"` | `"Google": "TargetA"` | 僅正向（Burp -> Claude） |
 | **正規表達式** | `"regex": "replacement"` | `"\\d{3}-\\d{4}": "XXX-XXXX"` | 僅正向（Burp -> Claude） |
 
 > **注意**：只有域名替換會雙向運作。關鍵字和正規表達式僅在正向（Burp -> Claude）生效，避免反向替換時短字串造成誤判。

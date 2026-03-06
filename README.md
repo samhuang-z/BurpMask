@@ -7,19 +7,44 @@ A de-identification proxy between Claude Code and Burp Suite's MCP server. Autom
 ## 架構 / Architecture
 
 ```
-Claude Code (AI API)
-  |  stdin:  假域名 (e.g. mail.target-a.test)
-  |  stdout: 假域名
-  v
-BurpMask (burpmask.py)
-  |  stdin:  假域名 -> 真域名（反向替換，僅域名）
-  |  stdout: 真域名/關鍵字 -> 假的（正向遮罩）
-  |  安全防護: 輸出前掃描，若仍含真實資料則攔截
-  v
-mcp-proxy.jar (Burp MCP bridge, stdio <-> SSE)
-  |
-  v
-Burp Suite MCP Extension (SSE on localhost:9876)
+┌─────────────────────────────────────────────────────────┐
+│                    Anthropic Cloud                       │
+│                                                         │
+│  Claude AI 只看到：mail.target-a.test、TargetA          │
+│  （永遠不知道真實目標是 google.com）                      │
+└──────────────────────┬──────────────────────────────────┘
+                       │
+            ┌──────────┴──────────┐
+            │    Claude Code      │
+            │   （你的電腦上）      │
+            └──────────┬──────────┘
+                       │ JSON-RPC (stdio)
+          ┌────────────┴────────────┐
+          │        BurpMask         │
+          │                         │
+          │  ↑ 回應往上傳給 Claude：  │
+          │    google.com            │
+          │    → target-a.test      │
+          │    Google → TargetA     │
+          │    ⚠ 安全檢查：攔截殘留   │
+          │                         │
+          │  ↓ 指令往下傳給 Burp：    │
+          │    target-a.test        │
+          │    → google.com         │
+          │    （僅替換域名）         │
+          └────────────┬────────────┘
+                       │ JSON-RPC (stdio)
+            ┌──────────┴──────────┐
+            │    mcp-proxy.jar    │
+            │  (stdio ↔ SSE 橋接)  │
+            └──────────┬──────────┘
+                       │ SSE (localhost:9876)
+            ┌──────────┴──────────┐
+            │  Burp Suite + MCP   │
+            │                     │
+            │  這裡用的是真實域名    │
+            │  google.com          │
+            └─────────────────────┘
 ```
 
 **核心原則**：Claude 永遠看不到真實域名或關鍵字。真實資料只存在於本地端的 proxy 與 Burp Suite 之間。

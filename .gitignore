@@ -1,0 +1,5 @@
+# Real config contains sensitive client data - never commit
+deid-config.json
+
+# Third-party binary
+mcp-proxy.jar

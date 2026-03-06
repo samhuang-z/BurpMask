@@ -1,0 +1,13 @@
+{
+  "replacements": {
+    "domains": {
+      "portal.example.com": "portal.acme.test",
+      "*.example.com": "*.acme.test"
+    },
+    "keywords": {
+      "Example Corp": "AcmeCo",
+      "example": "acme"
+    },
+    "patterns": {}
+  }
+}

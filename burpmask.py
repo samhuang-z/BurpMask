@@ -67,6 +67,7 @@ def build_reverse_domain_pairs(config):
     """Build reverse replacement pairs for domains only (fake -> real).
 
     Only domains are reversed to avoid false positives from short keywords.
+    Handles both literal domains and regex-escaped versions (e.g. portal\.acme\.test).
     """
     pairs = []
     replacements = config.get("replacements", {})
@@ -75,6 +76,11 @@ def build_reverse_domain_pairs(config):
     # Reverse: fake exact domains -> real exact domains (longest fake first)
     exact = {k: v for k, v in domains.items() if not k.startswith("*.")}
     for real_domain, fake_domain in sorted(exact.items(), key=lambda x: -len(x[1])):
+        # Regex-escaped version first (longer match takes priority)
+        fake_escaped = fake_domain.replace(".", r"\.")
+        real_escaped = real_domain.replace(".", r"\.")
+        pairs.append((re.compile(re.escape(fake_escaped), re.IGNORECASE), real_escaped))
+        # Literal version
         pairs.append((re.compile(re.escape(fake_domain), re.IGNORECASE), real_domain))
 
     # Reverse: fake wildcard domains -> real wildcard domains
@@ -82,11 +88,20 @@ def build_reverse_domain_pairs(config):
     for real_pattern, fake_pattern in wildcard.items():
         fake_suffix = fake_pattern[1:]  # e.g. ".client-a.test"
         real_suffix = real_pattern[1:]  # e.g. ".example.com"
-        regex = re.compile(
+        # Regex-escaped version first
+        fake_suffix_escaped = fake_suffix.replace(".", r"\.")
+        real_suffix_escaped = real_suffix.replace(".", r"\.")
+        regex_escaped = re.compile(
+            r"([a-zA-Z0-9](?:[a-zA-Z0-9\-]*[a-zA-Z0-9])?)" + re.escape(fake_suffix_escaped),
+            re.IGNORECASE,
+        )
+        pairs.append((regex_escaped, r"\1" + real_suffix_escaped))
+        # Literal version
+        regex_literal = re.compile(
             r"([a-zA-Z0-9](?:[a-zA-Z0-9\-]*[a-zA-Z0-9])?)" + re.escape(fake_suffix),
             re.IGNORECASE,
         )
-        pairs.append((regex, r"\1" + real_suffix))
+        pairs.append((regex_literal, r"\1" + real_suffix))
 
     return pairs
 
